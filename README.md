@@ -59,3 +59,24 @@ which steps went wrong (a technical error, a normal action that failed, a delibe
 did not get its status). A test that walks until everything is covered checks the system and its
 traffic together: an action added without its links, or a contract change that breaks one,
 fails it.
+
+## Journeys: the contract of a frontend
+
+The graph of a system is also what its users can do. `Graph.Journeys()` keeps the normal entry
+points, the actions they reach and the normal links; deliberate errors are traffic only, a
+frontend never offers them. `Graph.WriteJourneys(path)` writes them as JSON:
+
+```json
+{
+  "starts": ["listItems"],
+  "actions": [
+    { "name": "listItems", "next": ["getItem"] },
+    { "name": "getItem", "next": ["listItems"] }
+  ]
+}
+```
+
+A frontend reads this file: one screen per action (the name is the operationId, so the call is in
+the client generated from the same contract), the `next` actions as what the screen offers. A test
+on the frontend side fails when an action has no screen, or a screen no action: the API contract
+and the journeys are enough for the backend and the frontend to work in parallel.
