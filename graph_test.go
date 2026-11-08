@@ -66,6 +66,21 @@ func played(journals [][]engine.Record) []string {
 	return out
 }
 
+func Test_Graph_AnActionNoLinkLeadsTo_IsUnreachable(t *testing.T) {
+	// GIVEN the bank's balance in the graph, but no link to it (the system forgot it)
+	store, ledger := shop.NewStore(), bank.NewLedger()
+	sh, bk := shop.New(store), bank.New(ledger)
+	g := engine.NewGraph().Add(sh.Buy, sh.Refund, bk.Balance).Start(engine.StartWith(sh.Buy, 1))
+
+	// WHEN the graph is checked, without playing anything
+	unreachable := g.Unreachable()
+
+	// THEN the balance is named
+	if !slices.Equal(unreachable, []string{"balance"}) {
+		t.Fatalf("unreachable = %v", unreachable)
+	}
+}
+
 func Test_Graph_ALinkBetweenServicesNeverPlayed_IsReportedMissing(t *testing.T) {
 	// GIVEN the system, and users who only ever buy
 	s := givenSystem(false)
@@ -122,8 +137,11 @@ func Test_Graph_ALinkAddedFromAnotherPackage_IsFollowedWithItsValues(t *testing.
 }
 
 func Test_Graph_UsersCoverEverythingDeclared(t *testing.T) {
-	// GIVEN the system with the refund
+	// GIVEN the system with the refund, every action of it reachable
 	s := givenSystem(true)
+	if u := s.graph.Unreachable(); len(u) != 0 {
+		t.Fatalf("unreachable: %v", u)
+	}
 
 	// WHEN users walk at random
 	journals := walk(t, s, engine.Weighted{StopProb: 0.1}, 100)

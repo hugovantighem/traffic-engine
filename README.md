@@ -53,7 +53,8 @@ leaves out what only another service calls. See `examples/` and `graph_test.go`.
 
 ## Coverage
 
-`g.Cover(journals...)` tells which entry points and links were never played as expected, and
+`g.Unreachable()` names the actions no walk can reach (no entry point, no link to them), without
+playing anything. `g.Cover(journals...)` tells which entry points and links were never played as expected, and
 which steps went wrong (a technical error, a normal action that failed, a deliberate error that
 did not get its status). A test that walks until everything is covered checks the system and its
 traffic together: an action added without its links, or a contract change that breaks one,

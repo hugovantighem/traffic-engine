@@ -82,3 +82,42 @@ func (g *Graph) Config(c Config) Config {
 
 // Cover compares journals with what the graph declares (see Cover).
 func (g *Graph) Cover(journals ...[]Record) Covered { return Cover(g.Starts(), g.Nodes(), journals...) }
+
+// Unreachable are the actions of the graph that no walk can reach: no entry point, and no normal
+// link from a reachable action (a deliberate error leaves the user where it was, so it reaches
+// nothing). Seen without playing anything, it is the first thing a coverage test checks.
+func (g *Graph) Unreachable() []string {
+	links := map[string][]string{}
+	for _, n := range g.Nodes() {
+		for _, l := range n.Links {
+			if l.Fail == "" {
+				links[n.Name] = append(links[n.Name], l.To)
+			}
+		}
+	}
+	seen := map[string]bool{}
+	var queue []string
+	for _, s := range g.Starts() {
+		if s.Fail == "" && !seen[s.Action] {
+			seen[s.Action] = true
+			queue = append(queue, s.Action)
+		}
+	}
+	for len(queue) > 0 {
+		a := queue[0]
+		queue = queue[1:]
+		for _, to := range links[a] {
+			if !seen[to] {
+				seen[to] = true
+				queue = append(queue, to)
+			}
+		}
+	}
+	var out []string
+	for _, a := range g.actions {
+		if !seen[a.ActionName()] {
+			out = append(out, a.ActionName())
+		}
+	}
+	return out
+}
